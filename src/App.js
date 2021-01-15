@@ -1,23 +1,48 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from "react";
+import Datatable from "./datatable/index";
+
+require("es6-promise").polyfill();
+require("isomorphic-fetch");
 
 function App() {
+  const [data, setData]  = useState([])
+  const [q, setQ] = useState("")
+  const [searchColumns, setSearchColumns] = useState(["region", "unitName", "specialism"])
+  useEffect(() => {
+    const fetchData = async () =>{
+      await fetch("http://helixsmartlabs.in/portfolio/old/bed_bureau/bed.php")
+              .then(async response => await response.json())
+              .then(async json => await setData(json.beds));
+    }
+    fetchData();
+  }, [])
+
+  function search(rows) {
+    return rows.filter(row => 
+        searchColumns.some(column => row[column].toString().toLowerCase().indexOf(q.toLowerCase()) > -1)
+      )
+  }
+
+  
+  const columns = data[0] && Object.keys(data[0])
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <div>
+        <input type="text" value={q} onChange={(e) => setQ(e.target.value)} />
+        {columns && columns.map((column) => <label className="px-2">
+          <input type="checkbox" checked={searchColumns.includes(column)} onChange = {(e) => {
+            const checked = searchColumns.includes(column)
+            setSearchColumns(prev => checked
+              ? prev.filter(sc => sc !== column)
+              : [...prev, column])
+          }}/>
+          {column}
+          </label>)}
+      </div>
+      <div>
+        <Datatable  data={search(data)}/>
+      </div>
     </div>
   );
 }
